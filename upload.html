@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVault — Encrypted File Upload</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --white: #ffffff;
+    --accent: #2563eb;
+    --accent2: #06b6d4;
+    --accent-light: #eff6ff;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 20px 60px rgba(37,99,235,0.12);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(37,99,235,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(6,182,212,0.08) 0%, transparent 60%);
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(37,99,235,0.08);
+    animation: slideUp 0.6s ease both;
+  }
+
+  @keyframes slideUp {
+    from { opacity:0; transform: translateY(30px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ── LOGO ── */
+  .logo-wrap {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 32px;
+  }
+  .logo-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; color: white;
+    box-shadow: 0 8px 20px rgba(37,99,235,0.3);
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem; font-weight: 800;
+    color: var(--text); letter-spacing: 1px;
+  }
+  .logo-text span { color: var(--accent); }
+
+  /* ── TITLE ── */
+  .title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.7rem; font-weight: 800;
+    color: var(--text); line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--muted); font-size: 0.9rem;
+    line-height: 1.6; margin-bottom: 32px;
+  }
+
+  /* ── BADGES ── */
+  .badges {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--accent-light);
+    border: 1px solid rgba(37,99,235,0.2);
+    color: var(--accent);
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: #fafbff;
+    margin-bottom: 20px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    transform: scale(1.01);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 3rem; margin-bottom: 16px;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  .drop-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .drop-sub {
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .drop-sub span { color: var(--accent); font-weight: 500; }
+
+  /* ── FILE PREVIEW ── */
+  .file-preview {
+    display: none;
+    background: var(--accent-light);
+    border: 1px solid rgba(37,99,235,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    align-items: center;
+    gap: 12px;
+  }
+  .file-preview.show { display: flex; }
+  .file-icon-box {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1rem; flex-shrink: 0;
+  }
+  .file-meta { flex: 1; overflow: hidden; }
+  .file-name {
+    font-weight: 600; font-size: 0.85rem;
+    color: var(--text); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .file-size { font-size: 0.72rem; color: var(--muted); }
+  .file-remove {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1.1rem;
+    transition: color 0.2s;
+  }
+  .file-remove:hover { color: var(--red); }
+
+  /* ── PROGRESS ── */
+  .progress-wrap { display: none; margin-bottom: 20px; }
+  .progress-wrap.show { display: block; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.78rem; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 8px; background: var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(to right, var(--accent), var(--accent2));
+    border-radius: 10px;
+    transition: width 0.3s ease;
+  }
+  .progress-steps {
+    display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .step-chip {
+    font-size: 0.68rem; padding: 3px 10px;
+    border-radius: 20px; border: 1px solid var(--border);
+    color: var(--muted); background: white;
+    transition: all 0.3s;
+  }
+  .step-chip.active {
+    background: var(--accent); color: white;
+    border-color: var(--accent);
+  }
+  .step-chip.done {
+    background: var(--green); color: white;
+    border-color: var(--green);
+  }
+
+  /* ── BUTTON ── */
+  .upload-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; border: none;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: all 0.3s;
+    box-shadow: 0 8px 24px rgba(37,99,235,0.3);
+    display: flex; align-items: center;
+    justify-content: center; gap: 10px;
+    position: relative; overflow: hidden;
+  }
+  .upload-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(37,99,235,0.4); }
+  .upload-btn:hover::before { opacity: 1; }
+  .upload-btn:active { transform: translateY(0); }
+  .upload-btn:disabled {
+    opacity: 0.6; cursor: not-allowed; transform: none;
+    box-shadow: none;
+  }
+
+  /* ── SUCCESS ── */
+  .success-box {
+    display: none;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    text-align: center;
+  }
+  .success-box.show { display: block; animation: slideUp 0.4s ease; }
+  .success-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .success-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: #065f46; margin-bottom: 6px;
+  }
+  .success-msg { font-size: 0.8rem; color: #047857; margin-bottom: 16px; }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green); color: white;
+    border: none; padding: 10px 24px;
+    border-radius: 8px; font-size: 0.85rem;
+    font-weight: 600; cursor: pointer;
+    font-family: 'Instrument Sans', sans-serif;
+    transition: all 0.3s; text-decoration: none;
+  }
+  .download-btn:hover { background: #059669; transform: translateY(-1px); }
+
+  /* ── ERROR ── */
+  .error-box {
+    display: none;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 16px;
+    font-size: 0.82rem;
+    color: #be123c;
+  }
+  .error-box.show { display: block; }
+
+  /* ── FOOTER ── */
+  .footer-note {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; margin-top: 20px;
+    font-size: 0.72rem; color: var(--muted);
+  }
+
+  /* ── FILES LIST ── */
+  .files-section {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 32px 48px;
+    width: 100%;
+    max-width: 560px;
+    margin-top: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(37,99,235,0.08);
+    animation: slideUp 0.6s ease 0.2s both;
+  }
+  .files-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .file-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .file-row:last-child { border-bottom: none; }
+  .file-row-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .file-row-meta { flex: 1; }
+  .file-row-name { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+  .file-row-info { font-size: 0.72rem; color: var(--muted); }
+  .dl-btn {
+    background: var(--accent-light); border: 1px solid rgba(37,99,235,0.2);
+    color: var(--accent); padding: 6px 14px;
+    border-radius: 8px; font-size: 0.75rem;
+    font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-family: 'Instrument Sans', sans-serif;
+  }
+  .dl-btn:hover { background: var(--accent); color: white; }
+
+  @media(max-width: 600px) {
+    .card, .files-section { padding: 28px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div class="logo-icon">🔐</div>
+    <div class="logo-text">Safety<span>locker</span></div>
+  </div>
+
+  <!-- TITLE -->
+  <div class="title">Upload Your File<br>Securely to Cloud</div>
+  <div class="subtitle">• Secure file storage with AES-256 encryption<br>• Privacy-protected cloud storage<br>• Safe and reliable AWS cloud infrastructure<br>• Secure access and protected file transfer</div>
+
+  <!-- BADGES -->
+  <div class="badges">
+    <div class="badge">🔒 AES-256 Encrypted</div>
+    <div class="badge">☁️ AWS S3 Storage</div>
+    <div class="badge">⬇️ Anytime Download</div>
+    <div class="badge">🛡️ Privacy Guaranteed</div>
+  </div>
+
+  <!-- DROP ZONE -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="*/*">
+    <span class="drop-icon">📁</span>
+    <div class="drop-title">Drop your file here</div>
+    <div class="drop-sub">or <span>click to browse</span> — PDF, DOCX, images & more</div>
+  </div>
+
+  <!-- FILE PREVIEW -->
+  <div class="file-preview" id="filePreview">
+    <div class="file-icon-box" id="fileIconBox">📄</div>
+    <div class="file-meta">
+      <div class="file-name" id="fileName">—</div>
+      <div class="file-size" id="fileSize">—</div>
+    </div>
+    <button class="file-remove" onclick="clearFile()" title="Remove">✕</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">
+      <span id="progressLabel">Preparing...</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-steps">
+      <div class="step-chip" id="step1">📦 Preparing</div>
+      <div class="step-chip" id="step2">🔐 Encrypting</div>
+      <div class="step-chip" id="step3">☁️ Uploading to AWS</div>
+      <div class="step-chip" id="step4">✅ Complete</div>
+    </div>
+  </div>
+
+  <!-- UPLOAD BUTTON -->
+  <button class="upload-btn" id="uploadBtn" onclick="startUpload()">
+    <span>🔒</span> Upload File Securely
+  </button>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- SUCCESS -->
+  <div class="success-box" id="successBox">
+    <div class="success-icon">✅</div>
+    <div class="success-title">File Uploaded Successfully!</div>
+    <div class="success-msg" id="successMsg">Your file has been encrypted and stored securely on AWS S3.</div>
+    <a href="#" class="download-btn" id="downloadLink">⬇️ Download File</a>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-note">🔒 256-bit AES encryption &nbsp;•&nbsp; Stored on AWS S3 &nbsp;•&nbsp; Zero plain-text storage</div>
+</div>
+
+<!-- UPLOADED FILES LIST -->
+<div class="files-section" id="filesSection" style="display:none;">
+  <div class="files-title">📂 Your Uploaded Files</div>
+  <div id="filesList"></div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const dropZone  = document.getElementById('dropZone');
+let selectedFile = null;
+let uploadedFiles = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
+
+// ── DRAG & DROP ──
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function getFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['pdf'].includes(ext)) return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '🖼️';
+  if (['mp4','mov','avi','mkv'].includes(ext)) return '🎬';
+  if (['mp3','wav','aac'].includes(ext)) return '🎵';
+  if (['zip','rar','7z'].includes(ext)) return '🗜️';
+  if (['xlsx','csv'].includes(ext)) return '📊';
+  if (['pptx','ppt'].includes(ext)) return '📊';
+  return '📁';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(2) + ' MB';
+}
+
+function handleFile(file) {
+  selectedFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = formatSize(file.size) + '  •  ' + (file.type || 'Unknown type');
+  document.getElementById('fileIconBox').textContent = getFileIcon(file.name);
+  document.getElementById('filePreview').classList.add('show');
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('successBox').classList.remove('show');
+}
+
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  document.getElementById('filePreview').classList.remove('show');
+  document.getElementById('dropZone').style.display = 'block';
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('successBox').classList.remove('show');
+  resetSteps();
+}
+
+function setStep(n, status) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step'+i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+}
+
+function resetSteps() {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('step'+i).classList.remove('active','done');
+  }
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+async function startUpload() {
+  if (!selectedFile) {
+    showError('Please select a file first.');
+    return;
+  }
+
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Uploading...';
+
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('successBox').classList.remove('show');
+
+  // Step 1: Prepare
+  setStep(1, 'active'); setProgress(10, 'Preparing file...');
+  await delay(600);
+
+  // Step 2: Encrypt
+  setStep(2, 'active'); setProgress(35, 'Encrypting with AES-256...');
+  await delay(900);
+
+  // Step 3: Upload to AWS via PHP
+  setStep(3, 'active'); setProgress(60, 'Uploading to AWS S3...');
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'upload.php', true);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round(60 + (e.loaded / e.total) * 30);
+        setProgress(pct, 'Uploading to AWS S3...');
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (res.success) {
+            setStep(4, 'done'); setProgress(100, 'Upload complete!');
+            showSuccess(res.filename, res.download_url, res.file_key);
+            addToFilesList(res.filename, selectedFile.size, res.download_url, res.file_key);
+          } else {
+            showError('Upload failed: ' + (res.error || 'Unknown error'));
+            resetBtn();
+          }
+        } catch(e) {
+          showError('Server response error. Check PHP configuration.');
+          resetBtn();
+        }
+      } else {
+        showError('Server error (HTTP ' + xhr.status + '). Please try again.');
+        resetBtn();
+      }
+    };
+
+    xhr.onerror = () => {
+      showError('Network error. Check your connection or PHP server.');
+      resetBtn();
+    };
+
+    xhr.send(formData);
+
+  } catch(err) {
+    showError('Upload error: ' + err.message);
+    resetBtn();
+  }
+}
+
+function showSuccess(filename, downloadUrl, fileKey) {
+  const box = document.getElementById('successBox');
+  document.getElementById('successMsg').textContent =
+    '"' + filename + '" has been AES-256 encrypted and stored securely on AWS S3. File Key: ' + fileKey;
+  document.getElementById('downloadLink').href = downloadUrl || 'download.php?key=' + fileKey;
+  box.classList.add('show');
+
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = false;
+  btn.innerHTML = '<span>🔒</span> Upload Another File';
+  btn.onclick = () => { clearFile(); btn.onclick = startUpload; };
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠️ ' + msg;
+  box.classList.add('show');
+  resetBtn();
+}
+
+function resetBtn() {
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = false;
+  btn.innerHTML = '<span>🔒</span> Upload File Securely';
+  btn.onclick = startUpload;
+}
+
+function addToFilesList(name, size, dlUrl, key) {
+  const entry = { name, size, dlUrl, key, date: new Date().toLocaleString() };
+  uploadedFiles.unshift(entry);
+  localStorage.setItem('uploadedFiles', JSON.stringify(uploadedFiles.slice(0,20)));
+  renderFilesList();
+}
+
+function renderFilesList() {
+  if (uploadedFiles.length === 0) return;
+  const section = document.getElementById('filesSection');
+  const list = document.getElementById('filesList');
+  section.style.display = 'block';
+  list.innerHTML = uploadedFiles.map(f => `
+    <div class="file-row">
+      <div class="file-row-icon">${getFileIcon(f.name)}</div>
+      <div class="file-row-meta">
+        <div class="file-row-name">${f.name}</div>
+        <div class="file-row-info">${formatSize(f.size)} &nbsp;•&nbsp; ${f.date} &nbsp;•&nbsp; 🔐 Encrypted</div>
+      </div>
+      <a href="${f.dlUrl || 'download.php?key='+f.key}" class="dl-btn">⬇️ Download</a>
+    </div>
+  `).join('');
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Load previous files on page load
+renderFilesList();
+</script>
+</body>
+</html>
